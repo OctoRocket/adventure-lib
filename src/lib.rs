@@ -43,8 +43,9 @@ pub struct Exit<'a> {
 
 #[derive(Default)]
 pub struct Room<'a> {
+    id: &'static str,
     first_glance: &'static str,
-    contains: (Vec<Item>, Option<&'a Player>),
+    contains: Vec<Item>,
     exits: Vec<Exit<'a>>
 }
 
@@ -70,9 +71,19 @@ fn typewriter(text: &str) {
     println!();
 }
 
+fn check_inv_contains(player: &Player, id: &str) -> Option<usize> {
+    for i in &player.inventory {
+        if i.id == id {
+            return Some(player.inventory.iter().position(|f| f.id == i.id).unwrap());
+        }
+    }
+    typewriter("There isn't an item with that id!");
+    None
+}
+
 pub fn room_enter(room: Room) {
     typewriter(room.first_glance);
-    for i in room.contains.0 {
+    for i in room.contains {
         typewriter(i.first_glance);
     }
     let room_exit_count = room.exits.len();
@@ -98,19 +109,24 @@ pub fn view_inventory<'a>(player: &'a Player) {
 }
 
 pub fn move_item_to_hand<'a>(player: &'a mut Player, id: &str) {
-    for i in &player.inventory {
-        if i.id == id {
-            player.hand = Some(i.to_owned());
-            player.inventory.remove(player.inventory.iter().position(|f| f.id == i.id).unwrap());
-            return;
-        }
+    let index = check_inv_contains(player, id).unwrap();
+    player.hand = Some(player.inventory[index].clone());
+    player.inventory.remove(index);
+}
+
+pub fn drop_held_item<'a>(room: &'a mut Room, player: &'a mut Player) {
+    if player.hand.is_some() {
+        room.contains.push(player.hand.clone().unwrap());
+        typewriter(format!("You drop the {}", player.hand.clone().unwrap().id).as_str());
+        player.hand = None;
+    } else {
+        typewriter("You aren't holding anything to drop!");
     }
-    typewriter("There isn't an item with that id!");
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{Item, room_enter, Room, Exit, Directions, Player, view_inventory, move_item_to_hand};
+    use crate::{Item, room_enter, Room, Exit, Directions, Player, view_inventory, move_item_to_hand, drop_held_item};
 
     #[test]
     fn test_room() {
@@ -127,8 +143,9 @@ mod tests {
             ..Room::default()
         };
         let room = Room{
+            id: "Test room",
             first_glance: "You come to a room that has a grid like texure on the walls, there is the word \"Test\" in a big, arial font.",
-            contains: (vec![note], None),
+            contains: vec![note],
             exits: vec![
                 Exit {
                     direction: Directions::North,
@@ -161,15 +178,16 @@ mod tests {
             hand: None
         };
         
-        let Room = Room {
-            contains: (vec![], Some(&player)),
+        let mut room = Room {
+            contains: vec![],
             ..Room::default()
         };
 
         view_inventory(&player);
         move_item_to_hand(&mut player, "stick");
         view_inventory(&player);
-        // drop_held_item(&mut room, &mut player)
-        // view_inventory(&player);
+
+        drop_held_item(&mut room, &mut player);
+        view_inventory(&player);
     }
 }
