@@ -81,7 +81,7 @@ fn check_inv_contains(player: &Player, id: &str) -> Option<usize> {
     None
 }
 
-pub fn room_enter(room: Room) {
+pub fn look_around(room: Room) {
     typewriter(room.first_glance);
     for i in room.contains {
         typewriter(i.first_glance);
@@ -124,9 +124,13 @@ pub fn drop_held_item<'a>(room: &'a mut Room, player: &'a mut Player) {
     }
 }
 
+pub fn pickup_item<'a>(room: &'a mut Room, player: &'a Player, id: &str) {
+
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{Item, room_enter, Room, Exit, Directions, Player, view_inventory, move_item_to_hand, drop_held_item};
+    use crate::{Item, look_around, Room, Exit, Directions, Player, view_inventory, move_item_to_hand, drop_held_item};
 
     #[test]
     fn test_room() {
